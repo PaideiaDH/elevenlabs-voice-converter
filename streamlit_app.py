@@ -55,6 +55,29 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+def check_password():
+    """Returns `True` if the user had the correct password."""
+    def password_entered():
+        correct_password = os.environ.get("STREAMLIT_SERVER_PASSWORD", "paideia2024")
+        if st.session_state["password"] == correct_password:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store password
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        # First run, show input for username + password
+        st.text_input("Password", type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state["password_correct"]:
+        # Password incorrect, show input + error
+        st.text_input("Password", type="password", on_change=password_entered, key="password")
+        st.error("😕 Password incorrect")
+        return False
+    else:
+        # Password correct
+        return True
+
 @st.cache_resource
 def get_voice_converter():
     """Get cached voice converter instance"""
@@ -90,6 +113,10 @@ def create_zip_download(files_dict, zip_name="converted_voices.zip"):
 def main():
     """Main Streamlit app"""
     
+    # Password protection
+    if not check_password():
+        st.stop()
+    
     # Header
     st.markdown('<h1 class="main-header">🎤 ElevenLabs Voice Converter</h1>', unsafe_allow_html=True)
     st.markdown("### Transform your voice files to different voices using AI")
@@ -97,16 +124,6 @@ def main():
     # Sidebar for configuration
     with st.sidebar:
         st.header("⚙️ Settings")
-        
-        # API Key input
-        api_key = st.text_input(
-            "ElevenLabs API Key",
-            type="password",
-            help="Get your API key from https://elevenlabs.io/speech-to-speech"
-        )
-        
-        if api_key:
-            os.environ['ELEVENLABS_API_KEY'] = api_key
         
         # Background noise removal
         remove_noise = st.checkbox(
@@ -128,6 +145,11 @@ def main():
         st.markdown("2. Select target voices")
         st.markdown("3. Click Convert")
         st.markdown("4. Download results")
+        
+        # Logout button
+        if st.button("🚪 Logout"):
+            del st.session_state["password_correct"]
+            st.rerun()
     
     # Main content area
     col1, col2 = st.columns([1, 1])
