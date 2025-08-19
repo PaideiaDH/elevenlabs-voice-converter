@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  voice-converter:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+    volumes:
+      - ./voice_files:/app/voice_files:ro
+      - ./converted_voices:/app/converted_voices
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  default:
+    name: voice-converter-network
